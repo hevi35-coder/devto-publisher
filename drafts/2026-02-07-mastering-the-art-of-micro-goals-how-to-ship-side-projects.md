@@ -32,7 +32,7 @@ What if I told you that the secret to actually shipping your side project is to 
 
 ### What’s the Mandalart 9x9 Grid?
 
-💡 Imagine your side project as a big puzzle. The Mandalart 9x9 grid is your way of slicing that puzzle into 9 chunks—each one representing a sub-goal (like "Set up the database" or "Design the login page"). Then, you break *each of those chunks* into 9 even smaller steps. 
+💡 Imagine your side project as a big puzzle. The Mandalart 9x9 grid is your way of slicing that puzzle into 9 chunks—each one representing a sub-goal (like "Set up the database" or "Design the login page"). Then, you break *each of those chunks* into 8 even smaller steps. 
 
 So instead of staring at an endless to-do list like "Build the app," you’ve got super-actionable steps like:
 
@@ -63,7 +63,7 @@ Are you building an app? Your sub-goals might look like this:
 - Launch a landing page.
 - Deploy to the cloud.
 
-Each sub-goal is then broken down further into 9 actionable tasks, creating a clear roadmap for your project. The grid makes it easy to see the relationship between your core goal, sub-goals, and daily actions.
+Each sub-goal is then broken down further into 8 actionable tasks, creating a clear roadmap for your project. The grid makes it easy to see the relationship between your core goal, sub-goals, and daily actions.
 
 ### 2. **Daily Action Checklists**: Stay Focused on Execution
 Once your 9x9 grid is set up, MandaAct’s **Today’s View** helps you focus on what needs to be done *today*. The app generates a clean checklist of tasks based on your grid, so you can work through your goals step by step. No more decision paralysis or wondering what to tackle next—just open the app and start checking off tasks.
