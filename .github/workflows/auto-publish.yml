@@ -1,0 +1,50 @@
+name: Auto Publish to Dev.to
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'drafts/**'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2 # To get previous commit for diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Identify Changed File
+        id: files
+        run: |
+          # Get list of changed files in drafts/ directory
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '^drafts/' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No draft files changed."
+            echo "::set-output name=file::"
+          else
+            # Take the first one (assuming onep PR per article mostly)
+            FILE=$(echo "$CHANGED_FILES" | head -n 1)
+            echo "Found changed draft: $FILE"
+            echo "file=$FILE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Publisher
+        if: steps.files.outputs.file != ''
+        env:
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+        run: |
+          echo "🚀 Publishing ${{ steps.files.outputs.file }}..."
+          node publish.js "${{ steps.files.outputs.file }}"

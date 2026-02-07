@@ -7,16 +7,31 @@ const puppeteer = require('puppeteer');
 require('dotenv').config();
 
 const API_KEY = process.env.DEVTO_API_KEY;
-const DRAFT_PATH = path.join(__dirname, 'drafts', '2026-02-07-mandaact-1-1-0-update.md');
+// Check for CLI arguments
+const args = process.argv.slice(2);
+let DRAFT_PATH = null;
 
+if (args.length > 0) {
+    DRAFT_PATH = args[0];
+}
+
+// Ensure API Key exists
 if (!API_KEY) {
     console.error("❌ Error: DEVTO_API_KEY is missing in .env");
     process.exit(1);
 }
 
-// Check for CLI arguments
-const args = process.argv.slice(2);
-if (args.length > 0 && args[0].startsWith('http')) {
+if (!DRAFT_PATH) {
+    console.error("❌ Error: Please provide the path to the draft file.");
+    process.exit(1);
+}
+
+if (!DRAFT_PATH.startsWith('http') && !fs.existsSync(DRAFT_PATH)) {
+    console.error(`❌ Error: File not found: ${DRAFT_PATH}`);
+    process.exit(1);
+}
+
+if (DRAFT_PATH.startsWith('http')) {
     console.log(`🔍 Manual Verification Mode: ${args[0]}`);
 
     (async () => {
@@ -225,6 +240,6 @@ async function verifyWithBrowser(articleUrl) {
     }
 }
 
-if (require.main === module && args.length === 0) {
+if (require.main === module) {
     publishArticle();
 }
