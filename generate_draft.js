@@ -1,24 +1,12 @@
-
 const fs = require('fs');
 const path = require('path');
-const OpenAI = require('openai');
 const matter = require('gray-matter');
-require('dotenv').config();
+const config = require('./config');
+const client = require('./lib/ai-client');
 
-const GITHUB_TOKEN = process.env.GITHUB_MODELS_TOKEN;
-const QUEUE_PATH = path.join(__dirname, 'TOPIC_QUEUE.md');
-const CONTEXT_PATH = path.join(__dirname, '../../MyObsidianVault/30_Technical/MandaAct_Context.md');
-const DRAFTS_DIR = path.join(__dirname, 'drafts');
-
-if (!GITHUB_TOKEN) {
-    console.error("❌ Error: GITHUB_MODELS_TOKEN is missing in .env");
-    process.exit(1);
-}
-
-const client = new OpenAI({
-    baseURL: "https://models.inference.ai.azure.com",
-    apiKey: GITHUB_TOKEN
-});
+const QUEUE_PATH = config.paths.queue;
+const CONTEXT_PATH = config.paths.context;
+const DRAFTS_DIR = config.paths.drafts;
 
 async function generateDraft() {
     try {
@@ -95,7 +83,7 @@ You are NOT a dry technical writer. You are a creative maker who loves building 
         const coverFilename = `${slug}-cover.png`;
         const coverPath = path.join(__dirname, 'assets', 'images', 'covers', coverFilename);
         const coverRepoPath = path.join('assets', 'images', 'covers', coverFilename); // Relative path for Repo
-        const coverUrl = `https://raw.githubusercontent.com/hevi35-coder/devto-publisher/main/${coverRepoPath}`; // Raw URL for Dev.to
+        const coverUrl = `${config.github.rawBaseUrl}/${coverRepoPath}`; // Raw URL for Dev.to
 
         // Ensure directory exists
         const coversDir = path.join(__dirname, 'assets', 'images', 'covers');

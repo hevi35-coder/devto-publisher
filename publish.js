@@ -1,9 +1,9 @@
-
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const matter = require('gray-matter');
 const puppeteer = require('puppeteer');
+const config = require('./config');
 require('dotenv').config();
 
 const API_KEY = process.env.DEVTO_API_KEY;
@@ -57,10 +57,7 @@ async function publishArticle() {
         let contentBody = fileContent;
 
         // 1. Replace Local Asset Links with Remote GitHub Links
-        const GITHUB_USERNAME = 'hevi35-coder';
-        const REPO_NAME = 'devto-publisher';
-        const BRANCH = 'main';
-        const BASE_ASSET_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/${BRANCH}/assets/`;
+        const BASE_ASSET_URL = config.github.assetBaseUrl;
 
         // Replace relative paths like "../assets/"
         contentBody = contentBody.replace(/\.\.\/assets\//g, BASE_ASSET_URL);
@@ -126,7 +123,22 @@ async function publishArticle() {
 
         console.log(`🔗 Link: ${response.data.url}`);
 
-        // 3. Verify Images (Static Content)
+        // 3. Update Archive (Auto-track published articles)
+        try {
+            const archivePath = config.paths.archive;
+            const archiveContent = fs.existsSync(archivePath) ? fs.readFileSync(archivePath, 'utf8') : '# Published Articles\n';
+            const date = new Date().toISOString().split('T')[0];
+            const archiveEntry = `- [${date}] [${article.title}](${response.data.url})\n`;
+
+            if (!archiveContent.includes(article.title)) {
+                fs.writeFileSync(archivePath, archiveContent + archiveEntry, 'utf8');
+                console.log(`📚 Added to ARCHIVE.md`);
+            }
+        } catch (archiveError) {
+            console.warn(`⚠️ Failed to update archive: ${archiveError.message}`);
+        }
+
+        // 4. Verify Images (Static Content)
         console.log("🔍 Verifying images from content...");
         await verifyImagesFromContent(contentBody);
 
