@@ -23,14 +23,31 @@ async function publishArticle() {
         // and replace links. For this manual run, we assume the user will handle image hosting 
         // or we use the relative paths if Dev.to supports them (it doesn't support local relative).
 
+        let contentBody = fileContent;
+
+        // 1. Replace Local Asset Links with Remote GitHub Links
+        const GITHUB_USERNAME = 'hevi35-coder';
+        const REPO_NAME = 'devto-publisher';
+        const BRANCH = 'main';
+        const BASE_ASSET_URL = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${REPO_NAME}/${BRANCH}/assets/`;
+
+        // Replace relative paths like "../assets/"
+        contentBody = contentBody.replace(/\.\.\/assets\//g, BASE_ASSET_URL);
+
+        // Update frontmatter cover_image if it's local
+        let mainImage = data.cover_image;
+        if (mainImage && mainImage.startsWith('../assets')) {
+            mainImage = mainImage.replace('../assets/', BASE_ASSET_URL);
+        }
+
         // IMPORTANT: Dev.to API requires a 'article' object
         const article = {
             title: data.title,
-            body_markdown: fileContent, // Send the whole thing including frontmatter? No, Dev.to parser handles it usually, but API expects body_markdown.
-            published: true, // User said "Deploy", so we set to true? Or draft? Let's safeguard as true if user said "Deploy".
+            body_markdown: contentBody,
+            published: true,
             series: data.series,
             tags: data.tags,
-            main_image: data.cover_image
+            main_image: mainImage
         };
 
         console.log(`🚀 Publishing: ${article.title}...`);
