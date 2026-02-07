@@ -98,3 +98,30 @@ We moved from manual publishing to a **Fully Automated Content Pipeline**:
 The system is **Active & Under Verification**.
 *   **Next Steps**: Analyze initial outputs, refine prompts, and improve error handling.
 
+## 6. Phase 3 Retrospective: Troubleshooting & Stabilization (2026-02-08)
+
+### 🚨 Issues Encountered
+1.  **Missing PR Visibility**:
+    *   *Issue*: User couldn't see the PR in the app.
+    *   *Root Cause*: PR #1 was unexpectedly closed (or merged) and self-initiated PRs do not trigger notifications.
+    *   *Resolution*: Reopened PR #1 manually. Clarified that GitHub notifications filter out self-actions.
+
+2.  **Content Hallucination (9 vs 8 Actions)**:
+    *   *Issue*: Draft stated "9 actionable steps" per sub-goal. MandaAct uses a 9x9 grid, which means 1 Core + 8 Sub-goals, and each Sub-goal has 1 Center + 8 Actions.
+    *   *Fix*: Updated `MandaAct_Context.md` to explicitly state **"8 Actions per Sub-goal"**. Corrected the draft text.
+
+3.  **Auto-Publish Failure**:
+    *   *Issue*: Merging PR #1 did not trigger publishing.
+    *   *Root Cause*: 
+        *   `publish.js` had a **hardcoded file path**, ignoring the new draft.
+        *   The `auto-publish` workflow was missing or failed to trigger due to `GITHUB_TOKEN` permissions.
+    *   *Fix*:
+        *   Refactored `publish.js` to accept CLI arguments (dynamic path).
+        *   Recreated `.github/workflows/auto-publish.yml` with `workflow_dispatch` for manual overrides.
+        *   Manually triggered the publish script to ensure immediate delivery.
+
+### ✅ Final Status
+All systems are nominal. 
+*   **Draft Generation**: Creates accurate content with cover images.
+*   **Correction Loop**: Context file prevents hallucinations.
+*   **Publishing**: Now supports dynamic file paths and automated triggers on merge.
