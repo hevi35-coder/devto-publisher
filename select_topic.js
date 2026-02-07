@@ -1,25 +1,9 @@
-
 const fs = require('fs');
-const path = require('path');
-const OpenAI = require('openai');
-require('dotenv').config();
+const config = require('./config');
+const client = require('./lib/ai-client');
 
-const GITHUB_TOKEN = process.env.GITHUB_MODELS_TOKEN;
-
-if (!GITHUB_TOKEN) {
-    console.error("❌ Error: GITHUB_MODELS_TOKEN is missing in .env");
-    console.error("   Please generate a token from https://github.com/marketplace/models (or use a classic PAT if supported)");
-    process.exit(1);
-}
-
-// Initialize OpenAI client pointing to GitHub Models endpoint
-const client = new OpenAI({
-    baseURL: "https://models.inference.ai.azure.com", // Official endpoint for GitHub Models
-    apiKey: GITHUB_TOKEN
-});
-
-const QUEUE_PATH = path.join(__dirname, 'TOPIC_QUEUE.md');
-const ARCHIVE_PATH = path.join(__dirname, 'ARCHIVE.md');
+const QUEUE_PATH = config.paths.queue;
+const ARCHIVE_PATH = config.paths.archive;
 
 async function selectTopic() {
     try {
