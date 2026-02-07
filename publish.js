@@ -7,7 +7,6 @@ const puppeteer = require('puppeteer');
 require('dotenv').config();
 
 const API_KEY = process.env.DEVTO_API_KEY;
-const DRAFT_PATH = path.join(__dirname, 'drafts', '2026-02-07-mandaact-1-1-0-update.md');
 
 if (!API_KEY) {
     console.error("❌ Error: DEVTO_API_KEY is missing in .env");
@@ -16,20 +15,37 @@ if (!API_KEY) {
 
 // Check for CLI arguments
 const args = process.argv.slice(2);
-if (args.length > 0 && args[0].startsWith('http')) {
-    console.log(`🔍 Manual Verification Mode: ${args[0]}`);
+let DRAFT_PATH = null;
+
+if (args.length > 0) {
+    DRAFT_PATH = args[0];
+} else {
+    // Default to strict mode: require an argument
+    console.error("❌ Error: Please provide the path to the draft file.");
+    console.error("   Usage: node publish.js drafts/my-article.md");
+    process.exit(1);
+}
+
+if (!fs.existsSync(DRAFT_PATH) && !DRAFT_PATH.startsWith('http')) { // Only check existence if it's a file path
+    console.error(`❌ Error: File not found: ${DRAFT_PATH}`);
+    process.exit(1);
+}
+
+// Manual Verification Mode (if URL is passed)
+if (DRAFT_PATH.startsWith('http')) {
+    console.log(`🔍 Manual Verification Mode: ${DRAFT_PATH}`);
 
     (async () => {
         // 1. Static Content Check
         try {
-            const res = await axios.get(args[0], { headers: { 'User-Agent': 'Mozilla/5.0' } });
+            const res = await axios.get(DRAFT_PATH, { headers: { 'User-Agent': 'Mozilla/5.0' } });
             await verifyImagesFromContent(res.data);
         } catch (err) {
             console.error("❌ Failed to fetch URL static content:", err.message);
         }
 
         // 2. Browser Check
-        await verifyWithBrowser(args[0]);
+        await verifyWithBrowser(DRAFT_PATH);
     })();
     return;
 }
