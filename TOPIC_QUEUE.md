@@ -1,4 +1,10 @@
-# 🗓️ Upcoming Content Queue
+# 🗓️ Upcoming# 📋 Weekly Topic Queue
+
+*   **Mastering the Art of Micro-Goals: How to Ship Side Projects** (Drafted & Verified ✅)
+    *   *Rationale*: Many developers struggle with scope creep.
+    *   *MandaAct Angle*: Use 9x9 grid to break down a "Side Project" into 8 sub-goals (MVP, UI, Auth, etc.).
+    *   *Target Audience*: Indie Hackers.
+
 *This file is automatically updated by the Sunday Topic Committee.*
 
 ## On Deck (Next Up)
