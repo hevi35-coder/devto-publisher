@@ -32,7 +32,7 @@ What if I told you that the secret to actually shipping your side project is to 
 
 ### What’s the Mandalart 9x9 Grid?
 
-💡 Imagine your side project as a big puzzle. The Mandalart 9x9 grid is your way of slicing that puzzle into 9 chunks—each one representing a sub-goal (like "Set up the database" or "Design the login page"). Then, you break *each of those chunks* into 8 even smaller steps. 
+💡 Imagine your side project as a big puzzle. The Mandalart 9x9 grid is your way of slicing that puzzle into 8 chunks—each one representing a sub-goal (like "Set up the database" or "Design the login page"). Then, you break *each of those chunks* into 8 even smaller steps. 
 
 So instead of staring at an endless to-do list like "Build the app," you’ve got super-actionable steps like:
 
