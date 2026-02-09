@@ -324,7 +324,8 @@ ${html}
         title: koTitle,
         images: images.length,
         htmlPath: htmlPath,
-        backupPath: versionedPath
+        backupPath: versionedPath,
+        previewHtml: html // ✅ Embed content for mobile copy-paste
     }, attachments);
 
     return { title: koTitle, html, images };
