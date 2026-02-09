@@ -8,6 +8,11 @@
 *This file is automatically updated by the Sunday Topic Committee.*
 
 ## On Deck (Next Up)
+*   **How to Stay Productive in an Async-First World: A Visual Approach for Developers**
+    *   *Rationale*: With the rise of remote work and async-first communication, developers often struggle to manage their schedules, balance team collaboration, and maintain focus on personal goals. This trend demands a structured approach to planning and prioritizing work while staying adaptable to asynchronous workflows.
+    *   *MandaAct Angle*: MandaAct's 9x9 grid helps developers visually organize their tasks, aligning individual goals with team priorities. The grid's structure ensures clarity on what to tackle next, even in a less predictable async environment. Features like Goal Diagnosis help developers break down complex projects into smaller steps, making it easier to stay productive and focused amidst asynchronous demands.
+    *   *Target*: Remote developers, indie hackers, and junior devs adapting to async-first workflows.
+
 *   **The Power of Small Wins: Building Developer Confidence Through Micro-Successes**
     *   *Rationale*: Many developers, especially juniors and indie hackers, struggle with feeling stuck or overwhelmed by the scale of their goals. This can lead to procrastination and self-doubt. Highlighting the importance of small, achievable wins provides a timely and actionable mindset shift for developers looking to maintain momentum in their projects or careers.
     *   *MandaAct Angle*: MandaAct's 9x9 grid philosophy is built around breaking down large goals into smaller, actionable tasks. By using MandaAct, developers can visually map out their path to success, focusing on incremental wins that build confidence and drive progress. Features like Goal Diagnosis help identify the next smallest step, while the structure of the grid ensures alignment with bigger objectives.
