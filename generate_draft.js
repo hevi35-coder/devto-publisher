@@ -1,147 +1,164 @@
+/**
+ * Draft Generator v2 - Multi-language parallel content generation
+ * 
+ * Features:
+ * - Trend validation before generation
+ * - Parallel EN/KO draft generation
+ * - Tone profile-based prompts
+ * - Quality gate with regeneration loop
+ * - Cover image generation for each language
+ */
+
 const fs = require('fs');
 const path = require('path');
 const matter = require('gray-matter');
 const config = require('./config');
 const client = require('./lib/ai-client');
 const { notifier } = require('./lib/notifier');
+const { getProfile, buildPromptInstructions } = require('./lib/tone-profiles');
+const { validateTrend, buildAvoidanceInstructions, shouldRejectTopic } = require('./lib/trend-validator');
+const { checkQuality, printReport } = require('./quality_gate');
+const { injectCTAToFile } = require('./lib/cta-injector');
+const { pushCoversToMain } = require('./lib/git-manager');
 
 const QUEUE_PATH = config.paths.queue;
 const CONTEXT_PATH = config.paths.context;
 const DRAFTS_DIR = config.paths.drafts;
 
-async function generateDraft() {
-    try {
-        console.log("✍️  Ghostwriter is waking up...");
+// Configuration
+const MAX_REGENERATION_ATTEMPTS = 3;
+const QUALITY_THRESHOLD = 70;
 
-        // 1. Read Topic
-        const queueContent = fs.readFileSync(QUEUE_PATH, 'utf8');
-        const match = queueContent.match(/\*   \*\*(.*?)\*\*\n    \*   \*Rationale\*: (.*?)\n    \*   \*MandaAct Angle\*: (.*?)\n/);
+/**
+ * Read topic from queue
+ */
+function readTopic() {
+    const queueContent = fs.readFileSync(QUEUE_PATH, 'utf8');
 
-        if (!match) {
-            console.log("⚠️ No topics found in 'On Deck'. Exiting.");
-            return;
-        }
+    // Regex to find topics that correspond to the format:
+    // * **Title**
+    //     * *Rationale*: ...
+    //     * *MandaAct Angle*: ...
+    // And excluding those that have "(Drafted ...)" in the title line.
+    const regex = /\*   \*\*(?!.*\((?:Drafted|Published)\))(.*?)\*\*\s*\n\s+\*\s+\*Rationale\*:\s+(.*?)\s*\n\s+\*\s+\*MandaAct Angle\*:\s+(.*?)\s*\n/;
 
-        const [fullMatch, title, rationale, angle] = match;
-        console.log(`📝 Selected Topic: ${title}`);
+    const match = queueContent.match(regex);
 
-        // 2. Read Context (MandaAct USP)
-        const context = fs.existsSync(CONTEXT_PATH) ? fs.readFileSync(CONTEXT_PATH, 'utf8') : "MandaAct is a 9x9 Mandalart grid app for iOS.";
-
-        // 3. Draft Content with AI
-        const prompt = `
-You are a "Non-developer Vibe Coder" and productivity enthusiast who uses MandaAct.
-You are NOT a dry technical writer. You are a creative maker who loves building things but hates getting bogged down in "admin" work.
-
-**Topic**: ${title}
-**Context**: ${rationale}
-**Product Angle**: ${angle}
-
-**Requirements**:
-1. **Tone**:
-   - Enthusiastic and accessible (Use emojis 🚀, but don't overdo it).
-   - "Vibe Coder" style: Focus on flow, creativity, and shipping, not just "clean code".
-   - Relatable: Admmit struggles with burnout, focus, or "tutorial hell".
-2. **Structure**:
-   - **The Problem**: Why existing methods fail (related to topic).
-   - **The Solution (Mental Model)**: The concept of visual decomposition / 9x9 grid.
-   - **The Tool (MandaAct)**: How the app implements this. (Focus on "Goal Diagnosis", "Visual 9x9 Grid", "Sub-goal Decomposition"). 
-   - **Constraint**: DO NOT mention "OCR" or "Deep Work Mode" as these features do not exist.
-   - **Call to Action**: Download link.
-3. **Format**: Valid Markdown. Use H2 (##) for sections.
-4. **Frontmatter**:
-   - title: "${title}"
-   - published: false
-   - tags: [productivity, developers, career, mandaact]
-   - series: "Building MandaAct"
-   - cover_image: "https://mandaact.vercel.app/og/default.png" (Placeholder)
-
-**Draft Content**:
-`;
-
-        console.log("🤖 Generating content (GPT-4o)...");
-        const response = await client.chat.completions.create({
-            messages: [
-                { role: "system", content: "You are an expert Ghostwriter for a developer productivity blog." },
-                { role: "user", content: prompt }
-            ],
-            model: "gpt-4o",
-            temperature: 0.7,
-            max_tokens: 2500
-        });
-
-        const draftContent = response.choices[0].message.content;
-
-        // 4. FACT CHECKER AGENT (Self-Correction)
-        console.log("🕵️‍♂️  Fact-Checker Agent is reviewing the draft...");
-        const correctedDraft = await verifyDraft(draftContent, context);
-
-        // 5. Prepare Metadata
-        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-        const date = new Date().toISOString().split('T')[0];
-
-        // 5a. Generate Cover Image
-        const coverFilename = `${slug}-cover.png`;
-        const coverPath = path.join(__dirname, 'assets', 'images', 'covers', coverFilename);
-        const coverRepoPath = path.join('assets', 'images', 'covers', coverFilename); // Relative path for Repo
-        const coverUrl = `${config.github.rawBaseUrl}/${coverRepoPath}`; // Raw URL for Dev.to
-
-        // Ensure directory exists
-        const coversDir = path.join(__dirname, 'assets', 'images', 'covers');
-        if (!fs.existsSync(coversDir)) fs.mkdirSync(coversDir, { recursive: true });
-
-        console.log("🎨 Generating Cover Image...");
-        try {
-            await require('./generate_cover').generateCover(title, coverPath);
-        } catch (imgError) {
-            console.error("⚠️ Failed to generate cover image:", imgError.message);
-        }
-
-        // 6. Save to drafts/
-        const filename = `${date}-${slug}.md`;
-        const filePath = path.join(DRAFTS_DIR, filename);
-
-        // Ensure directory exists
-        if (!fs.existsSync(DRAFTS_DIR)) fs.mkdirSync(DRAFTS_DIR);
-
-        // Update frontmatter with real cover image URL
-        const finalDraft = correctedDraft.replace(
-            /cover_image: ".*?"/,
-            `cover_image: "${coverUrl}"`
-        );
-
-        const finalContent = finalDraft.replace(/^```markdown\n/, '').replace(/\n```$/, ''); // Clean fence
-        fs.writeFileSync(filePath, finalContent, 'utf8');
-
-        console.log(`✅ Draft saved (Verified): drafts/${filename}`);
-
-        // 7. Quality Gate Check
-        const { checkQuality, printReport } = require('./quality_gate');
-        const qualityReport = checkQuality(filePath);
-        printReport(qualityReport);
-
-        // 8. Remove from Queue (with quality score)
-        const qualityBadge = qualityReport.passed ? `✅ Score: ${qualityReport.score}` : `⚠️ Score: ${qualityReport.score}`;
-        const updatedQueue = queueContent.replace(`*   **${title}**`, `*   **${title}** (Drafted ${qualityBadge})`);
-        fs.writeFileSync(QUEUE_PATH, updatedQueue, 'utf8');
-
-        // Send notification
-        await notifier.stepComplete('draft_generation', {
-            title: title,
-            file: filename,
-            qualityScore: qualityReport.score
-        });
-
-    } catch (error) {
-        console.error("❌ Generation Failed:", error.message);
-        // Send failure notification
-        await notifier.stepFailed('draft_generation', error);
+    if (!match) {
+        return null;
     }
+
+    return {
+        fullMatch: match[0],
+        title: match[1].trim(),
+        rationale: match[2].trim(),
+        angle: match[3].trim()
+    };
 }
 
+/**
+ * Generate draft with specific tone profile
+ */
+async function generateWithProfile(topic, profileId, trendResult, context) {
+    const profile = getProfile(profileId);
+    const toneInstructions = buildPromptInstructions(profileId);
+    const avoidanceInstructions = buildAvoidanceInstructions(trendResult);
+
+    const isKorean = profile.language === 'ko';
+
+    const systemPrompt = isKorean
+        ? `당신은 MandaAct 블로그의 전문 작가입니다. 한국 독자를 위한 따뜻하고 친근한 글을 작성합니다.`
+        : `You are an expert Ghostwriter for a developer productivity blog.`;
+
+    const basePrompt = isKorean ? `
+**주제**: ${topic.title}
+**배경**: ${topic.rationale}
+**MandaAct 연결점**: ${topic.angle}
+
+## 제품 정보 (Ground Truth)
+${context}
+
+## 작성 규칙
+${toneInstructions}
+${avoidanceInstructions}
+
+## 구조
+1. **문제 인식**: 왜 기존 방법이 실패하는가
+2. **해결책 (개념)**: 시각적 분해 / 9x9 그리드의 힘
+3. **도구 (MandaAct)**: 어떻게 이 앱이 도움이 되는가 (Goal Diagnosis, 9x9 Grid, Sub-goal)
+4. **실천 방안**: 독자가 바로 시도할 수 있는 것
+5. **마무리**: 앱 다운로드 유도
+
+## 제약사항
+- "OCR", "Deep Work Mode" 기능 언급 금지 (존재하지 않음)
+- 이모지 사용 금지
+- **굵은 글씨** 마크다운 지양
+- ~습니다 체 사용
+
+## 출력 형식
+YAML frontmatter 포함 마크다운:
+---
+title: "${topic.title}"
+published: false
+tags: [생산성, 개발자, 목표관리, mandaact]
+cover_image: "PLACEHOLDER"
+---
+
+[본문]
+` : `
+**Topic**: ${topic.title}
+**Context**: ${topic.rationale}
+**Product Angle**: ${topic.angle}
+
+## Product Information (Ground Truth)
+${context}
+
+## Tone & Style
+${toneInstructions}
+${avoidanceInstructions}
+
+## Structure
+1. **The Problem**: Why existing methods fail
+2. **The Solution (Mental Model)**: Visual decomposition / 9x9 grid concept
+3. **The Tool (MandaAct)**: How the app helps (Goal Diagnosis, 9x9 Grid, Sub-goal Decomposition)
+4. **Practical Tips**: What readers can try immediately
+5. **Call to Action**: App download
+
+## Constraints
+- Do NOT mention "OCR" or "Deep Work Mode" (these features don't exist)
+- Follow the tone profile strictly
+
+## Output Format
+Markdown with YAML frontmatter:
+---
+title: "${topic.title}"
+published: false
+tags: [productivity, developers, career, mandaact]
+series: "Building MandaAct"
+cover_image: "PLACEHOLDER"
+---
+
+[Content body]
+`;
+
+    const response = await client.chat.completions.create({
+        messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: basePrompt }
+        ],
+        model: 'gpt-4o',
+        temperature: 0.7,
+        max_tokens: 3000
+    });
+
+    return response.choices[0].message.content;
+}
+
+/**
+ * Verify draft with fact checker
+ */
 async function verifyDraft(draft, context) {
-    try {
-        const prompt = `
+    const prompt = `
 You are the "Quality Assurance Editor" for MandaAct.
 Your job is to REMOVE HALLUCINATIONS from the article draft.
 
@@ -158,31 +175,250 @@ ${draft}
 4. Output the **Corrected Article** (Markdown).
 `;
 
-        const response = await client.chat.completions.create({
-            messages: [
-                { role: "system", content: "You are a strict Fact Checker." },
-                { role: "user", content: prompt }
-            ],
-            model: "gpt-4o",
-            temperature: 0.3, // Lower temperature for accuracy
-            max_tokens: 2500
-        });
+    const response = await client.chat.completions.create({
+        messages: [
+            { role: 'system', content: 'You are a strict Fact Checker.' },
+            { role: 'user', content: prompt }
+        ],
+        model: 'gpt-4o',
+        temperature: 0.3,
+        max_tokens: 3000
+    });
 
-        const corrected = response.choices[0].message.content;
+    return response.choices[0].message.content;
+}
 
-        // Simple heuristic to see if changes were made (optional logging)
-        if (corrected.length !== draft.length) {
-            console.log("   --> ✂️  Fact-Checker made corrections.");
+/**
+ * Save draft file
+ */
+function saveDraft(content, filename) {
+    const filePath = path.join(DRAFTS_DIR, filename);
+
+    // Ensure directory exists
+    if (!fs.existsSync(DRAFTS_DIR)) {
+        fs.mkdirSync(DRAFTS_DIR, { recursive: true });
+    }
+
+    // Clean markdown fences if present
+    const cleanContent = content.replace(/^```markdown\n/, '').replace(/\n```$/, '');
+    fs.writeFileSync(filePath, cleanContent, 'utf8');
+
+    return filePath;
+}
+
+/**
+ * Generate cover image for draft
+ */
+async function generateCoverImage(title, slug, lang = 'en') {
+    const suffix = lang === 'ko' ? '-ko' : '';
+    const coverFilename = `${slug}${suffix}-cover.png`;
+    const coverPath = path.join(__dirname, 'assets', 'images', 'covers', coverFilename);
+
+    // Ensure directory exists
+    const coversDir = path.join(__dirname, 'assets', 'images', 'covers');
+    if (!fs.existsSync(coversDir)) {
+        fs.mkdirSync(coversDir, { recursive: true });
+    }
+
+    console.log(`🎨 Generating cover image (${lang.toUpperCase()})...`);
+    try {
+        await require('./generate_cover').generateCover(title, coverPath, { lang });
+        console.log(`🖼️  Cover image generated: ${coverFilename}`);
+    } catch (error) {
+        console.error(`⚠️ Failed to generate cover image (${lang}):`, error.message);
+    }
+
+    const coverUrl = `${config.github.rawBaseUrl}/assets/images/covers/${coverFilename}`;
+    return { coverFilename, coverPath, coverUrl };
+}
+
+/**
+ * Process single draft with quality loop
+ */
+async function processDraft(topic, profileId, trendResult, context) {
+    const profile = getProfile(profileId);
+    const lang = profile.language;
+    const suffix = lang === 'ko' ? '-ko' : '';
+
+    console.log(`\n📝 Generating ${lang.toUpperCase()} draft (${profileId})...`);
+
+    let draft = null;
+    let qualityReport = null;
+    let attempts = 0;
+
+    // Quality gate loop
+    while (attempts < MAX_REGENERATION_ATTEMPTS) {
+        attempts++;
+        console.log(`   Attempt ${attempts}/${MAX_REGENERATION_ATTEMPTS}...`);
+
+        // Generate draft
+        draft = await generateWithProfile(topic, profileId, trendResult, context);
+
+        // Fact check
+        console.log(`   🕵️ Fact-checking...`);
+        draft = await verifyDraft(draft, context);
+
+        // Save temporarily for quality check
+        const slug = topic.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        const date = new Date().toISOString().split('T')[0];
+        const tempFilename = `${date}-${slug}${suffix}.md`;
+        const tempPath = saveDraft(draft, tempFilename);
+
+        // Quality check
+        qualityReport = checkQuality(tempPath);
+
+        if (qualityReport.score >= QUALITY_THRESHOLD) {
+            console.log(`   ✅ Quality passed: ${qualityReport.score}/100`);
+            break;
         } else {
-            console.log("   --> ✅ Draft is accurate.");
+            console.log(`   ⚠️ Quality score: ${qualityReport.score}/100 (need ${QUALITY_THRESHOLD}+)`);
+            if (attempts < MAX_REGENERATION_ATTEMPTS) {
+                console.log(`   🔄 Regenerating...`);
+            }
+        }
+    }
+
+    // Generate cover image
+    const slug = topic.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const coverInfo = await generateCoverImage(topic.title, slug, lang);
+
+    // Update draft with cover URL
+    draft = draft.replace(/cover_image: ".*?"/, `cover_image: "${coverInfo.coverUrl}"`);
+
+    // Final save
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `${date}-${slug}${suffix}.md`;
+    const filePath = saveDraft(draft, filename);
+
+    // Inject CTA (forced, not prompt-dependent)
+    console.log(`   📲 Injecting CTA...`);
+    injectCTAToFile(filePath, profileId, { lang, force: false });
+
+    return {
+        profileId,
+        language: lang,
+        filename,
+        filePath,
+        qualityReport,
+        coverInfo,
+        attempts
+    };
+}
+
+/**
+ * Main draft generation function
+ */
+async function generateDraft() {
+    try {
+        console.log('✍️  Ghostwriter v2 is waking up...');
+        console.log('═══════════════════════════════════════════════\n');
+
+        // 1. Read Topic
+        const topic = readTopic();
+        if (!topic) {
+            console.log('⚠️ No topics found in queue. Exiting.');
+            return;
+        }
+        console.log(`📝 Selected Topic: ${topic.title}\n`);
+
+        // 2. Read Context
+        const context = fs.existsSync(CONTEXT_PATH)
+            ? fs.readFileSync(CONTEXT_PATH, 'utf8')
+            : 'MandaAct is a 9x9 Mandalart grid app for iOS.';
+
+        // 3. Trend Validation
+        console.log('🔍 Phase 1: Trend Validation');
+        const trendResult = await validateTrend(topic);
+
+        if (shouldRejectTopic(trendResult)) {
+            console.log('❌ Topic rejected due to low trend relevance.');
+            return;
         }
 
-        return corrected;
+        // 4. Determine target platforms based on tags
+        console.log('\n🚀 Phase 2: Parallel Draft Generation');
+
+        const isKROnly = topic.title.includes('[KR-Only]');
+        const isENOnly = topic.title.includes('[EN-Only]');
+
+        // Clean title for AI generation (remove tags like [KR-Only], [SEO], etc)
+        const originalTitle = topic.title;
+        topic.title = topic.title.replace(/\[.*?\]\s*/g, '').trim();
+        console.log(`   Targeting: ${isKROnly ? 'KR Only' : isENOnly ? 'EN Only' : 'All Channels'}`);
+        console.log(`   Clean Title: "${topic.title}"`);
+
+        const tasks = [];
+        if (!isKROnly) tasks.push(processDraft(topic, 'devto', trendResult, context));
+        if (!isENOnly) tasks.push(processDraft(topic, 'blogger_kr', trendResult, context));
+
+        const results = await Promise.all(tasks);
+        const resultEN = results.find(r => r.language === 'en');
+        const resultKO = results.find(r => r.language === 'ko');
+
+        // 5. Results Summary
+        console.log('\n═══════════════════════════════════════════════');
+        console.log('📊 GENERATION COMPLETE');
+        console.log('═══════════════════════════════════════════════\n');
+
+        if (resultEN) {
+            console.log('📄 English Draft:');
+            console.log(`   File: drafts/${resultEN.filename}`);
+            console.log(`   Quality: ${resultEN.qualityReport.score}/100 (${resultEN.qualityReport.grade})`);
+            console.log(`   Attempts: ${resultEN.attempts}`);
+        }
+
+        if (resultKO) {
+            console.log('\n📄 Korean Draft:');
+            console.log(`   File: drafts/${resultKO.filename}`);
+            console.log(`   Quality: ${resultKO.qualityReport.score}/100 (${resultKO.qualityReport.grade})`);
+            console.log(`   Attempts: ${resultKO.attempts}`);
+        }
+
+        // 6. Update Queue (Dynamic specific to result existence)
+        const queueContent = fs.readFileSync(QUEUE_PATH, 'utf8');
+        const enScore = resultEN ? `EN:${resultEN.qualityReport.score}` : 'EN:Skip';
+        const koScore = resultKO ? `KO:${resultKO.qualityReport.score}` : 'KO:Skip';
+        const qualityBadge = `✅ ${enScore} ${koScore}`;
+
+        // Regex to match the original line with tags in the queue
+        // We use the originalTitle because readTopic reads it with tags
+        const escapeRegExp = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const titleRegex = new RegExp(`\\*   \\*\\*${escapeRegExp(originalTitle)}\\*\\*`);
+
+        const updatedQueue = queueContent.replace(
+            titleRegex,
+            `*   **${originalTitle}** (Drafted ${qualityBadge})`
+        );
+        fs.writeFileSync(QUEUE_PATH, updatedQueue, 'utf8');
+
+        // 7. Auto-push cover images to main
+        console.log('🔄 Syncing cover images to GitHub...');
+        pushCoversToMain(`Add cover images for: ${topic.title}`);
+
+        // 8. Send notification
+        const files = [];
+        const qualityScores = {};
+        if (resultEN) { files.push(resultEN.filename); qualityScores.en = resultEN.qualityReport.score; }
+        if (resultKO) { files.push(resultKO.filename); qualityScores.ko = resultKO.qualityReport.score; }
+
+        await notifier.stepComplete('draft_generation', {
+            title: topic.title,
+            files: files,
+            qualityScores: qualityScores
+        });
+
+        console.log('\n✅ All drafts generated successfully!');
 
     } catch (error) {
-        console.warn("⚠️ Fact-Checker failed. Saving original draft.", error.message);
-        return draft;
+        console.error('❌ Generation Failed:', error.message);
+        await notifier.stepFailed('draft_generation', error);
+        throw error;
     }
 }
 
-generateDraft();
+// Run if called directly
+if (require.main === module) {
+    generateDraft();
+}
+
+module.exports = { generateDraft, generateWithProfile, processDraft };

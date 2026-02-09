@@ -93,8 +93,8 @@ async function generateCover(title, outputPath, options = {}) {
     `;
 
     await page.setContent(htmlContent);
-    // Wait for font to load
-    await new Promise(r => setTimeout(r, 500));
+    // Wait for font to load (increased for reliability)
+    await new Promise(r => setTimeout(r, 2000));
     await page.screenshot({ path: outputPath });
     await browser.close();
 

@@ -8,6 +8,26 @@
 *This file is automatically updated by the Sunday Topic Committee.*
 
 ## On Deck (Next Up)
+*   **Why Developers Should Think in Systems, Not Tasks** (Drafted ✅ EN:80 KO:50)
+    *   *Rationale*: Modern developers often get lost in daily to-do lists without seeing the bigger picture. Systems thinking is a timeless approach.
+    *   *MandaAct Angle*: The 9x9 grid represents a system view. Each cell is part of a larger goal hierarchy, not an isolated task.
+    *   *Target*: Junior developers, indie hackers who want sustainable productivity.
+
+*   **[KR-Only] [SEO] The Ultimate Guide to Mandalart: From Ohtani to MandaAct** (Drafted ✅ EN:Skip KO:50)
+    *   *Rationale*: To rank for the core keyword "Mandalart", we need a comprehensive guide that defines it, explains its history (Ohtani), and positions MandaAct as the modern solution.
+    *   *MandaAct Angle*: MandaAct is the digital evolution of the paper-based Mandalart, offering portability and actionable tracking.
+    *   *Target*: General audience searching for "Mandalart", "Goal Setting", "Ohtani Shohei".
+
+*   **[KR-Only] [Comparison] Why Mobile Apps are Better than Excel for Mandalart**
+    *   *Rationale*: Many users search for Excel templates but struggle with maintenance. This article targets "Mandalart Excel" keywords and offers a better alternative.
+    *   *MandaAct Angle*: Excel is static; MandaAct is dynamic. Highlight notifications, progress tracking, and UI.
+    *   *Target*: Users frustrated with rigid templates or looking for "Mandalart App".
+
+*   **[KR-Only] [Template] 2026 Free Mandalart Template (and why you should upgrade to an App)**
+    *   *Rationale*: "Mandalart Template" is a high-volume keyword. We provide a simple image template as a lead magnet, then upsell the app.
+    *   *MandaAct Angle*: "Download this image if you want, but MandaAct does it better automatically."
+    *   *Target*: Students, planners looking for free resources.
+
 *   **The 9x9 Framework for Mastering AI Tools Without Overwhelm** (Drafted ✅ Score: 90)
     *   *Rationale*: AI tools like ChatGPT, Copilot, and MidJourney are becoming essential for developers, but many struggle to effectively integrate them into their workflows without feeling overwhelmed or distracted. This topic is timely as the adoption of AI tools continues to grow and developers need strategies to stay organized and avoid tool fatigue.
     *   *MandaAct Angle*: MandaAct's 9x9 grid philosophy helps developers map out their goals for leveraging AI tools effectively, breaking down the learning process into manageable sub-goals. By using MandaAct's visual planning and execution tools, developers can balance learning new AI tools while maintaining focus on their existing projects.
