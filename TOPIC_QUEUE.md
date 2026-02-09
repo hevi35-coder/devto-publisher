@@ -8,6 +8,11 @@
 *This file is automatically updated by the Sunday Topic Committee.*
 
 ## On Deck (Next Up)
+*   **Coding in Chaos: Structuring Your Developer Workflow in Unpredictable Times**
+    *   *Rationale*: Many developers today face unpredictable schedules, constant tech disruptions, and shifting project priorities. The challenge of staying organized and productive amidst these uncertainties has become a critical issue. This topic is timely as it addresses the growing need for adaptable yet structured workflows to navigate chaos effectively.
+    *   *MandaAct Angle*: MandaAct's 9x9 grid provides developers with a flexible visual framework to organize their goals and tasks, even in volatile environments. By breaking down large, uncertain objectives into smaller, actionable steps, MandaAct enables developers to regain clarity and focus. Features like Goal Diagnosis help identify priorities, while the grid structure ensures alignment with overarching goals, no matter how chaotic the day-to-day becomes.
+    *   *Target*: Developers, indie hackers, and junior devs who struggle with maintaining structure and productivity in the face of unpredictable schedules or shifting priorities.
+
 *   **How to Stay Productive in an Async-First World: A Visual Approach for Developers**
     *   *Rationale*: With the rise of remote work and async-first communication, developers often struggle to manage their schedules, balance team collaboration, and maintain focus on personal goals. This trend demands a structured approach to planning and prioritizing work while staying adaptable to asynchronous workflows.
     *   *MandaAct Angle*: MandaAct's 9x9 grid helps developers visually organize their tasks, aligning individual goals with team priorities. The grid's structure ensures clarity on what to tackle next, even in a less predictable async environment. Features like Goal Diagnosis help developers break down complex projects into smaller steps, making it easier to stay productive and focused amidst asynchronous demands.
