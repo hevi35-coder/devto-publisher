@@ -299,13 +299,8 @@ ${html}
     console.log('💡 팁: 모바일 대응은 네이버 블로그 자체에서 자동 처리됨');
     console.log('============================================\n');
 
-    // Send notification with attachments
-    await notifier.stepComplete('naver_export', {
-        title: koTitle,
-        images: images.length,
-        htmlPath: htmlPath,
-        backupPath: versionedPath
-    }, [
+    // Prepare attachments
+    const attachments = [
         {
             filename: versionedFilename,
             path: versionedPath
@@ -314,7 +309,23 @@ ${html}
             filename: 'content.txt',
             path: textPath
         }
-    ]);
+    ];
+
+    // Add cover image if exists
+    if (fs.existsSync(coverPath)) {
+        attachments.push({
+            filename: coverFileName,
+            path: coverPath
+        });
+    }
+
+    // Send notification with attachments
+    await notifier.stepComplete('naver_export', {
+        title: koTitle,
+        images: images.length,
+        htmlPath: htmlPath,
+        backupPath: versionedPath
+    }, attachments);
 
     return { title: koTitle, html, images };
 }
