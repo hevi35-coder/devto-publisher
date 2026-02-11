@@ -18,7 +18,7 @@
     *   *MandaAct Angle*: MandaAct is the digital evolution of the paper-based Mandalart, offering portability and actionable tracking.
     *   *Target*: General audience searching for "Mandalart", "Goal Setting", "Ohtani Shohei".
 
-*   **[KR-Only] [Comparison] Why Mobile Apps are Better than Excel for Mandalart**
+*   **[KR-Only] [Comparison] Why Mobile Apps are Better than Excel for Mandalart** (Drafted ✅ EN:Skip KO:45)
     *   *Rationale*: Many users search for Excel templates but struggle with maintenance. This article targets "Mandalart Excel" keywords and offers a better alternative.
     *   *MandaAct Angle*: Excel is static; MandaAct is dynamic. Highlight notifications, progress tracking, and UI.
     *   *Target*: Users frustrated with rigid templates or looking for "Mandalart App".
