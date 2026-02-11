@@ -1,1 +1,1 @@
-Designing for Chaos: Building Resilient Distributed Systems in 2026
+개발자의 미래 생산성: AI 통합 마스터하기
